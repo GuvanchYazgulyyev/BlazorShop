@@ -1,0 +1,32 @@
+﻿@page "/userlist";
+@using ShopClient.Pages.PagesOperations
+
+@inherits UserListOperation
+
+@if (userList != null)
+{
+    <table class="table table-striped table-bordered table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th scope="col">ID</th>
+                <th scope="col">İsim Soyisim</th>
+                <th scope="col">E Posta</th>
+                <th scope="col">Tarihi</th>
+                <th scope="col">Durum</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var x in userList)
+            {
+                <tr>
+                    <td>@x.Id</td>
+                    <td>@x.FullName</td>
+                    <td>@x.EMailAddress</td>
+                    <td>@x.CreateDate</td>
+                    <td><span class="badge bg-success">@x.IsActive</span></td>
+                </tr>
+            }
+
+        </tbody>
+    </table>
+}
