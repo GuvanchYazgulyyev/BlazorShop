@@ -17,13 +17,18 @@ namespace ShopSharedLibrary.DBContextOperation.Context
         }
 
         // Veritabanı bağlantısı burada yapılacak
+        //protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        //{
+        //    if (!optionsBuilder.IsConfigured)
+        //    {
+        //        optionsBuilder.UseSqlServer("Server=localhost;Database=BlazorShopDb;Trusted_Connection=True;TrustServerCertificate=True;");
+        //    }
+        //}
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            if (!optionsBuilder.IsConfigured)
-            {
-                optionsBuilder.UseSqlServer("Server=localhost;Database=BlazorOnlineSiparisDB;Trusted_Connection=True;TrustServerCertificate=True;");
-            }
+            // Bu kod artık gerekli değil çünkü Program.cs içinde DbContext ayarlanıyor
         }
+
 
         // DbSet'ler
         public DbSet<Users> Users { get; set; }

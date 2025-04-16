@@ -8,7 +8,7 @@ namespace ShopSharedLibrary.DBContextOperation.Context
         public BlazorShopDbContext CreateDbContext(string[] args)
         {
             var optionsBuilder = new DbContextOptionsBuilder<BlazorShopDbContext>();
-            optionsBuilder.UseSqlServer("Server=localhost;Database=BlazorOnlineSiparisDB;Trusted_Connection=True;TrustServerCertificate=True;");
+            optionsBuilder.UseSqlServer("Server=localhost;Database=BlazorShopDb;Trusted_Connection=True;TrustServerCertificate=True;");
 
             return new BlazorShopDbContext(optionsBuilder.Options);
         }
