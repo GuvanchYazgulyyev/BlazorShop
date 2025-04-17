@@ -1,0 +1,77 @@
+﻿@page "/loginPage"
+@layout EmptyLayout
+
+<h3 class="text-center mt-5 mb-4 text-primary">👤 Giriş Yap</h3>
+
+<div class="container d-flex justify-content-center">
+    <div class="card shadow-lg p-4 rounded" style="width: 100%; max-width: 400px;">
+        <EditForm Model="@userLoginRequest" OnValidSubmit="HandleLogin">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="mb-3">
+                <label for="email" class="form-label">E-posta Adresi</label>
+                <InputText id="email" class="form-control" @bind-Value="userLoginRequest.EMail" />
+                <ValidationMessage For="@(() => userLoginRequest.EMail)" />
+            </div>
+
+            <div class="mb-3">
+                <label for="password" class="form-label">Şifre</label>
+                <InputText id="password" type="password" class="form-control" @bind-Value="userLoginRequest.Passwrd" />
+                <ValidationMessage For="@(() => userLoginRequest.Passwrd)" />
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100">Giriş Yap</button>
+        </EditForm>
+
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger mt-3" role="alert">
+                @errorMessage
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Inject]
+    HttpClient client { get; set; }
+
+    [Inject]
+    ModalManager modalManager { get; set; }
+
+    [Inject]
+    NavigationManager navigation { get; set; }
+
+    private UserLoginRequestDTO userLoginRequest = new();
+    private string? errorMessage;
+
+    private async Task HandleLogin()
+    {
+        try
+        {
+            var response = await client.PostAsJsonAsync("api/User/Login", userLoginRequest);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<ServiceResponse<UserLoginResponseDTO>>();
+                if (result is not null && result.IsSuccess)
+                {
+                    // Token vs varsa localStorage'a yazabilirsin (isteğe bağlı)
+                    navigation.NavigateTo("/");
+                }
+                else
+                {
+                    errorMessage = result?.Message ?? "Bilinmeyen bir hata oluştu.";
+                }
+            }
+            else
+            {
+                errorMessage = "Sunucu hatası oluştu. Lütfen daha sonra tekrar deneyin.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"İşlem sırasında hata oluştu: {ex.Message}";
+        }
+    }
+}

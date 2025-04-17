@@ -1,9 +1,16 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using ShopServer.Helpers.HashOperation.PassEncrypter;
 using ShopServer.Services.Infrastuce;
 using ShopSharedLibrary.DBContextOperation.Context;
 using ShopSharedLibrary.DTO_Operation.DTO;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace ShopServer.Services.Services
 {
@@ -11,11 +18,13 @@ namespace ShopServer.Services.Services
     {
         private readonly IMapper _mapper;
         private readonly BlazorShopDbContext _context;
+        private readonly IConfiguration _configuration;
 
-        public UserService(IMapper mapper, BlazorShopDbContext context)
+        public UserService(IMapper mapper, BlazorShopDbContext context, IConfiguration configuration)
         {
             _mapper = mapper;
             _context = context;
+            _configuration = configuration;
         }
 
 
@@ -80,6 +89,64 @@ namespace ShopServer.Services.Services
         }
 
 
+
+        /// <summary>
+        ///  Login And JWT Operation
+        /// </summary>
+        /// <param name="EMail"></param>
+        /// <param name="Passwrd"></param>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
+        public async Task<UserLoginResponseDTO> Login(string EMail, string Passwrd)
+        {
+            try
+            {
+                // Şifreyi şifrele
+                var encryptPassword = PasswordEncrypter.Encrypt(Passwrd);
+
+                // Kullanıcı doğrulama
+                var userControl = await _context.Users.FirstOrDefaultAsync(x => x.EMailAddress == EMail && x.Password == encryptPassword);
+
+                if (userControl == null)
+                    throw new Exception("Kullanıcı bulunamadı!");
+
+                if (!userControl.IsActive)
+                    throw new Exception("Kullanıcı kayıtlı fakat aktif değil!");
+
+                UserLoginResponseDTO userLoginResponseDTO = new UserLoginResponseDTO();
+
+                // Token üretimi
+                var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtSecurityKey"]));
+                var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+                var expiry = DateTime.UtcNow.AddDays(int.Parse(_configuration["JwtExpiryInDays"]));
+
+                var claims = new[]
+                {
+            new Claim(ClaimTypes.Email, userControl.EMailAddress),
+            new Claim(ClaimTypes.NameIdentifier, userControl.Id.ToString()), // ekstra claim önerisi
+            new Claim(ClaimTypes.Name, userControl.FirstName + " " + userControl.LastName ?? "")
+                };
+
+                var token = new JwtSecurityToken(
+                    issuer: _configuration["JwtIssuer"],
+                    audience: _configuration["JwtAudience"],
+                    claims: claims,
+                    expires: expiry,
+                    signingCredentials: credentials);
+                userLoginResponseDTO.ApiToken = new JwtSecurityTokenHandler().WriteToken(token);
+                userLoginResponseDTO.User = _mapper.Map<UserDTO>(userControl);
+                return userLoginResponseDTO;
+
+
+            }
+            catch (Exception ex)
+            {
+                // Loglanabilir
+                throw new Exception("Login sırasında hata oluştu: " + ex.Message);
+            }
+        }
+
+
         /// <summary>
         /// Veriyi Güncelle
         /// </summary>
@@ -97,5 +164,7 @@ namespace ShopServer.Services.Services
             int result = await _context.SaveChangesAsync();
             return _mapper.Map<UserDTO>(findData);
         }
+
+
     }
 }

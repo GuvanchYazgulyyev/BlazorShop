@@ -14,5 +14,6 @@ namespace ShopSharedLibrary.DBContextOperation.Models
         public String LastName { get; set; }
         public String EMailAddress { get; set; }
         public bool IsActive { get; set; }
+        public String Password { get; set; }
     }
 }
