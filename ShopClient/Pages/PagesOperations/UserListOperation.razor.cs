@@ -22,7 +22,7 @@ namespace ShopClient.Pages.PagesOperations
         /// <returns></returns>
         protected async Task LoadList()
         {
-            var serviceResponse = await HttpClient.GetFromJsonAsync<ServiceResponse<List<UserDTO>>>("api/User");
+            var serviceResponse = await HttpClient.GetFromJsonAsync<ServiceResponse<List<UserDTO>>>("api/User/Users");
             if (serviceResponse.IsSuccess)
                 userList = serviceResponse.Value;
         }
