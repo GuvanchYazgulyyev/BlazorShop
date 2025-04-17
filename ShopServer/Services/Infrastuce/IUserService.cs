@@ -9,5 +9,7 @@ namespace ShopServer.Services.Infrastuce
         public Task<UserDTO> CreateUser(UserDTO User);
         public Task<UserDTO> UpdateUser(UserDTO User);
         public Task<bool> DeleteUserById(Guid id);
+
+        Task<UserLoginResponseDTO> Login(string EMail, string Passwrd);
     }
 }
