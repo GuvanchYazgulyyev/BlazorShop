@@ -20,7 +20,7 @@ namespace ShopServer.Controllers
 
 
         // Login Operation
-        [HttpGet("Login")]
+        [HttpPost("Login")]
         public async Task<ServiceResponse<UserLoginResponseDTO>> Login(UserLoginRequestDTO userLogin)
         {
             return new ServiceResponse<UserLoginResponseDTO>()

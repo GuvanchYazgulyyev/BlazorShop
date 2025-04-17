@@ -102,10 +102,10 @@ namespace ShopServer.Services.Services
             try
             {
                 // Şifreyi şifrele
-                var encryptPassword = PasswordEncrypter.Encrypt(Passwrd);
+                // var encryptPassword = PasswordEncrypter.Encrypt(Passwrd);
 
                 // Kullanıcı doğrulama
-                var userControl = await _context.Users.FirstOrDefaultAsync(x => x.EMailAddress == EMail && x.Password == encryptPassword);
+                var userControl = await _context.Users.FirstOrDefaultAsync(x => x.EMailAddress == EMail && x.Password == Passwrd);
 
                 if (userControl == null)
                     throw new Exception("Kullanıcı bulunamadı!");
