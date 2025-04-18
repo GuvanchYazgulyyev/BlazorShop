@@ -1,4 +1,5 @@
 ﻿@page "/loginPage"
+
 @layout ShopClient.Layout.EmptyLayout
 
 <h3 class="text-center mt-5 mb-4 text-primary">👤 Giriş Yap</h3>
@@ -42,6 +43,11 @@
     private UserLoginRequestDTO userLoginRequest = new();
     private string? errorMessage;
 
+    [Inject]
+    ILocalStorageService localStorageService { get; set; }
+    [Inject]
+    AuthenticationStateProvider stateProvider { get; set; }
+
     public async Task HandleLogin()
     {
         try
@@ -52,6 +58,14 @@
                 var result = await response.Content.ReadFromJsonAsync<ServiceResponse<UserLoginResponseDTO>>();
                 if (result is not null && result.IsSuccess)
                 {
+                    // Local  Storage de Tut
+                    await localStorageService.SetItemAsync("token", result.Value.ApiToken);
+                    await localStorageService.SetItemAsync("email", result.Value.User.EMailAddress);
+                    await localStorageService.SetItemAsync("fullName", result.Value.User.FullName);
+
+                    (stateProvider as AuthStateProvider).NotifyUserLogin(result.Value.User.EMailAddress);
+                    // Tokeni yolla 
+                    client.DefaultRequestHeaders.Authorization=new AuthenticationHeaderValue("Bearer", result.Value.ApiToken);
                     navigation.NavigateTo("/");
                 }
                 else

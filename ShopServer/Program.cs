@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using ShopServer.Services.Extentions; // Extension metodun bulunduğu namespace
+using ShopServer.Services.Extentions; // Extension metodlar için
 using ShopServer.Services.Infrastuce;
 using ShopServer.Services.Services;
 using ShopSharedLibrary.DBContextOperation.Context;
@@ -10,167 +10,95 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ✅ Configuration nesnesini al
-var configuration = builder.Configuration;
+// 1️⃣ Uygulama Konfigürasyonu
+// ----------------------------
+var configuration = builder.Configuration; // Uygulama yapılandırma ayarları
 
-// ✅ Razor Pages ve MVC
-builder.Services.AddControllersWithViews();
-builder.Services.AddRazorPages();
+// 2️⃣ MVC ve Razor Pages Servisleri
+// --------------------------------
+builder.Services.AddControllersWithViews(); // MVC Controller desteği
+builder.Services.AddRazorPages(); // Razor Pages desteği
 
-// ✅ Veritabanı bağlantısı (DbContext)
+// 3️⃣ Veritabanı Bağlantısı
+// ------------------------
 builder.Services.AddDbContext<BlazorShopDbContext>(options =>
-    options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"))); // SQL Server bağlantısı
 
-// ✅ JWT Authentication ayarları. Oluşturulan Tokeninin Validasyon işlemi. 
+// 4️⃣ JWT Kimlik Doğrulama Ayarları
+// --------------------------------
 builder.Services.AddAuthentication(options =>
 {
+    // Varsayılan kimlik doğrulama şemalarını ayarla
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 })
 .AddJwtBearer(options =>
 {
+    // Token doğrulama parametrelerini yapılandır
     options.TokenValidationParameters = new TokenValidationParameters
     {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = configuration["JwtIssuer"],
-        ValidAudience = configuration["JwtAudience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JwtSecurityKey"]))
+        ValidateIssuer = true, // Token yayıncısını doğrula
+        ValidateAudience = true, // Hedef kitleyi doğrula
+        ValidateLifetime = true, // Token süresini doğrula
+        ValidateIssuerSigningKey = true, // İmza anahtarını doğrula
+        ValidIssuer = configuration["JwtIssuer"], // Geçerli yayıncı
+        ValidAudience = configuration["JwtAudience"], // Geçerli hedef kitle
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JwtSecurityKey"])) // Güvenlik anahtarı
     };
 });
 
-builder.Services.AddScoped<ShopClient.ModalManager>(); //////////  Kontrol Edilecek
+// 5️⃣ Özel Servislerin Kaydı
+// --------------------------
+builder.Services.AddScoped<ShopClient.ModalManager>(); // Modal yönetimi servisi (KONTROL EDİLECEK)
+builder.Services.ConfigureMapping(); // AutoMapper konfigürasyonu (Extension metot)
+builder.Services.AddScoped<IUserService, UserService>(); // Kullanıcı servisi
 
-// ✅ AutoMapper Extension çağrısı
-builder.Services.ConfigureMapping();
+// 6️⃣ API Dökümantasyonu
+// ---------------------
+builder.Services.AddEndpointsApiExplorer(); // API endpoint keşfi
+builder.Services.AddSwaggerGen(); // Swagger dökümantasyonu
 
-// ✅ Service Dependency Injection
-builder.Services.AddScoped<IUserService, UserService>();
+// 7️⃣ Tarayıcı Yerel Depolama
+// --------------------------
+builder.Services.AddBlazoredLocalStorage(conf =>
+    conf.JsonSerializerOptions.WriteIndented = true); // Blazor için yerel depolama servisi
 
-// ✅ Swagger
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-builder.Services.AddBlazoredLocalStorage(conf => conf.JsonSerializerOptions.WriteIndented = true); // UI de Local de tutmak için
-
+// 8️⃣ Uygulama Yapılandırması
+// ---------------------------
 var app = builder.Build();
 
-// ✅ Middleware pipeline
+// 9️⃣ Geliştirme Ortamı Middleware'leri
+// ------------------------------------
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-    app.UseWebAssemblyDebugging(); // Blazor WebAssembly desteği
+    app.UseSwagger(); // Swagger JSON endpoint'ini etkinleştir
+    app.UseSwaggerUI(); // Swagger UI arayüzünü etkinleştir
+    app.UseWebAssemblyDebugging(); // Blazor WebAssembly hata ayıklama
 }
 else
 {
-    app.UseExceptionHandler("/Error");
-    app.UseHsts();
+    app.UseExceptionHandler("/Error"); // Production hata yönetimi
+    app.UseHsts(); // HTTP Strict Transport Security
 }
 
-app.UseHttpsRedirection();
-app.UseBlazorFrameworkFiles(); // Blazor dosyaları
-app.UseStaticFiles();
-app.UseRouting();
+// 🔟 Temel Middleware'ler
+// -----------------------
+app.UseHttpsRedirection(); // HTTPS yönlendirmesi
+app.UseBlazorFrameworkFiles(); // Blazor WebAssembly dosyaları
+app.UseStaticFiles(); // Statik dosya sunumu
+app.UseRouting(); // Routing middleware
 
-app.UseAuthentication(); // ✅ Authentication middleware
-app.UseAuthorization();
+// 1️⃣1️⃣ Güvenlik Middleware'leri
+// ------------------------------
+app.UseAuthentication(); // Kimlik doğrulama
+app.UseAuthorization(); // Yetkilendirme
 
-app.MapRazorPages();
-app.MapControllers();
-app.MapFallbackToFile("index.html");
+// 1️⃣2️⃣ Endpoint Yapılandırması
+// ----------------------------
+app.MapRazorPages(); // Razor Pages endpoint'leri
+app.MapControllers(); // API Controller endpoint'leri
+app.MapFallbackToFile("index.html"); // SPA fallback
 
-app.Run();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//using Microsoft.AspNetCore.Authentication.JwtBearer;
-//using Microsoft.EntityFrameworkCore;
-//using Microsoft.IdentityModel.Tokens;
-//using ShopServer.Services.Extentions; // ✅ Extension metodun bulunduğu namespace
-//using ShopServer.Services.Infrastuce;
-//using ShopServer.Services.Services;
-//using ShopSharedLibrary.DBContextOperation.Context;
-//using System.Text;
-//using System.Configuration;
-
-//var builder = WebApplication.CreateBuilder(args);
-
-//// Add services to the container
-//builder.Services.AddControllersWithViews();
-//builder.Services.AddRazorPages();
-
-//// 🔌 Add DbContext
-//builder.Services.AddDbContext<BlazorShopDbContext>(options =>
-//    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-////  JWT Ekleme Kısmı
-//builder.Services.AddAuthentication(options =>
-//{
-//    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-//    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-//})
-//    .AddJwtBearer(options2 =>
-//    {
-//        options2.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
-//        {
-//            ValidateIssuer = true,
-//            ValidateAudience = true,
-//            ValidateLifetime = true,
-//            ValidIssuer = Configuration["JwtIssuer"],
-//            ValidAudience = Configuration["JwtAudience"],
-//            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JwtSecurityKey"]))
-//        };
-//    });
-
-
-//// ✅ AutoMapper yapılandırmasını ekle (Sadece bunu kullan yeterli)
-//builder.Services.ConfigureMapping(); // 👈 Extension metod çağrısı
-
-//// ✅ Servis bağımlılıklarını ekle
-//builder.Services.AddScoped<IUserService, UserService>();
-
-//// Swagger
-//builder.Services.AddEndpointsApiExplorer();
-//builder.Services.AddSwaggerGen();
-
-//var app = builder.Build();
-
-//// Configure the HTTP request pipeline
-//if (app.Environment.IsDevelopment())
-//{
-//    app.UseSwagger();
-//    app.UseSwaggerUI();
-//    app.UseWebAssemblyDebugging(); // Blazor WebAssembly desteği
-//}
-//else
-//{
-//    app.UseExceptionHandler("/Error");
-//    app.UseHsts();
-//}
-
-//app.UseHttpsRedirection();
-//app.UseBlazorFrameworkFiles();
-//app.UseStaticFiles();
-
-//app.UseRouting();
-
-//app.UseAuthorization();
-
-//app.MapRazorPages();
-//app.MapControllers();
-//app.MapFallbackToFile("index.html");
-
-//app.Run();
+// 1️⃣3️⃣ Uygulamayı Başlat
+// -----------------------
+app.Run(); // Uygulamayı çalıştır
