@@ -2,15 +2,12 @@
 using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using ShopServer.Helpers.HashOperation.PassEncrypter;
 using ShopServer.Services.Infrastuce;
 using ShopSharedLibrary.DBContextOperation.Context;
 using ShopSharedLibrary.DTO_Operation.DTO;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Security.Cryptography;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace ShopServer.Services.Services
 {
@@ -89,59 +86,73 @@ namespace ShopServer.Services.Services
         }
 
 
-
         /// <summary>
-        ///  Login And JWT Operation
+        /// Kullanıcı giriş işlemini ve JWT token üretimini gerçekleştirir
         /// </summary>
-        /// <param name="EMail"></param>
-        /// <param name="Passwrd"></param>
-        /// <returns></returns>
-        /// <exception cref="Exception"></exception>
+        /// <param name="EMail">Kullanıcı e-posta adresi</param>
+        /// <param name="Passwrd">Kullanıcı şifresi (şifrelenmemiş)</param>
+        /// <returns>Token ve kullanıcı bilgilerini içeren DTO</returns>
+        /// <exception cref="Exception">Giriş işlemi sırasında oluşan hatalar</exception>
         public async Task<UserLoginResponseDTO> Login(string EMail, string Passwrd)
         {
             try
             {
-                // Şifreyi şifrele
+                // Şifreleme yapılacaksa (şu an yorum satırında)
                 // var encryptPassword = PasswordEncrypter.Encrypt(Passwrd);
 
-                // Kullanıcı doğrulama
+                // Veritabanında kullanıcı kontrolü - email ve şifre eşleşmesi
                 var userControl = await _context.Users.FirstOrDefaultAsync(x => x.EMailAddress == EMail && x.Password == Passwrd);
 
+                // Kullanıcı bulunamazsa hata fırlat
                 if (userControl == null)
                     throw new Exception("Kullanıcı bulunamadı!");
 
+                // Kullanıcı aktif değilse hata fırlat
                 if (!userControl.IsActive)
                     throw new Exception("Kullanıcı kayıtlı fakat aktif değil!");
 
+                // Dönüş nesnesi oluştur
                 UserLoginResponseDTO userLoginResponseDTO = new UserLoginResponseDTO();
 
-                // Token üretimi
+                // JWT TOKEN ÜRETİM İŞLEMLERİ //
+
+                // 1. Güvenlik anahtarı oluştur (appsettings'den alınan key ile)
                 var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtSecurityKey"]));
+
+                // 2. İmzalama kimlik bilgilerini oluştur (HMAC-SHA256 algoritması ile)
                 var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+                // 3. Token geçerlilik süresini ayarla (appsettings'den alınan gün sayısı kadar)
                 var expiry = DateTime.UtcNow.AddDays(int.Parse(_configuration["JwtExpiryInDays"]));
 
+                // 4. Token içine eklenecek claim'leri (talep bilgileri) tanımla
                 var claims = new[]
                 {
-            new Claim(ClaimTypes.Email, userControl.EMailAddress),
-            new Claim(ClaimTypes.NameIdentifier, userControl.Id.ToString()), // ekstra claim önerisi
-            new Claim(ClaimTypes.Name, userControl.FirstName + " " + userControl.LastName ?? "")
-                };
+            new Claim(ClaimTypes.Email, userControl.EMailAddress), // Kullanıcı email
+            new Claim(ClaimTypes.NameIdentifier, userControl.Id.ToString()), // Kullanıcı ID
+            new Claim(ClaimTypes.Name, userControl.FirstName + " " + userControl.LastName ?? "") // Tam ad
+        };
 
+                // 5. JWT token nesnesini oluştur
                 var token = new JwtSecurityToken(
-                    issuer: _configuration["JwtIssuer"],
-                    audience: _configuration["JwtAudience"],
-                    claims: claims,
-                    expires: expiry,
-                    signingCredentials: credentials);
+                    issuer: _configuration["JwtIssuer"], // Token yayıncı
+                    audience: _configuration["JwtAudience"], // Hedef kitle
+                    claims: claims, // Tanımlanan claim'ler
+                    expires: expiry, // Geçerlilik süresi
+                    signingCredentials: credentials); // İmzalama bilgileri
+
+                // 6. Oluşturulan token'ı string'e çevir
                 userLoginResponseDTO.ApiToken = new JwtSecurityTokenHandler().WriteToken(token);
+
+                // 7. Kullanıcı bilgilerini DTO'ya map'le
                 userLoginResponseDTO.User = _mapper.Map<UserDTO>(userControl);
+
+                // 8. Sonucu döndür
                 return userLoginResponseDTO;
-
-
             }
             catch (Exception ex)
             {
-                // Loglanabilir
+                // Hata durumunda loglama yapılabilir
                 throw new Exception("Login sırasında hata oluştu: " + ex.Message);
             }
         }

@@ -1,0 +1,42 @@
+﻿@page "/logout"
+@inject ILocalStorageService localStorage
+@inject AuthenticationStateProvider stateProvider
+@inject HttpClient httpClient
+@inject NavigationManager navigation
+@inject AuthStateProvider customAuthStateProvider // Özel AuthStateProvider'ı enjekte ediyoruz
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await localStorage.RemoveItemAsync("token");
+        await localStorage.RemoveItemAsync("email");
+        customAuthStateProvider.NotifyUserLogOut(); // Özel instance üzerinden metodu çağırıyoruz
+        httpClient.DefaultRequestHeaders.Authorization = null;
+        navigation.NavigateTo("/loginPage");
+    }
+}
+
+
+@* @page "/logout";
+
+
+@code {
+    [Inject]
+    ILocalStorageService localStorage { get; set; }
+    [Inject]
+    AuthenticationStateProvider stateProvider { get; set; }
+    [Inject]
+    HttpClient httpClient { get; set; }
+    [Inject]
+    NavigationManager navigation { get; set; }
+
+    protected async override Task OnInitializeAsync()
+    {
+        await localStorage.RemoveItemAsync("token");
+        await localStorage.RemoveItemAsync("email");
+        (stateProvider as AuthStateProvider).NotifyUserLogOut();
+        httpClient.DefaultRequestHeaders.Authorization = null;
+        navigation.NavigateTo("/loginPage");
+    }
+}
+ *@

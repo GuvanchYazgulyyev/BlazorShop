@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using ShopServer.Services.Infrastuce;
 using ShopSharedLibrary.DataObject.ResponseModels;
@@ -9,6 +10,7 @@ namespace ShopServer.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class UserController : ControllerBase
     {
         private readonly IUserService _userService;
@@ -21,6 +23,7 @@ namespace ShopServer.Controllers
 
         // Login Operation
         [HttpPost("Login")]
+        [AllowAnonymous]
         public async Task<ServiceResponse<UserLoginResponseDTO>> Login(UserLoginRequestDTO userLogin)
         {
             return new ServiceResponse<UserLoginResponseDTO>()

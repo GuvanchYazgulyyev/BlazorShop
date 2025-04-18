@@ -1,7 +1,22 @@
 ﻿<Router AppAssembly="@typeof(App).Assembly">
     <Found Context="routeData">
-        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
-        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+        @*  <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
+        <FocusOnNavigate RouteData="@routeData" Selector="h1" /> *@
+        <!-- Kullanıcı Authorize oldu mu-->
+        <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)">
+
+            <Authorizing>
+                <text>
+                    Giriş  Yapılıyor!!!!
+                </text>
+            </Authorizing>
+            <NotAuthorized>
+                <text>
+                    Giriş Yapılmadı. Sanırım yetkiniz yok!!!!!
+                </text>
+            </NotAuthorized>
+        </AuthorizeRouteView>
+        <!-- Kullanıcı Authorize oldu mu-->
     </Found>
     <NotFound>
         <PageTitle>Not found</PageTitle>
